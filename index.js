@@ -12,6 +12,7 @@ module.exports.handler = serverless(app);
 module.exports.getAccessToken = function(event, context, callback) {
   const { SANDBOX_ATOM_CLIENT_ID, SANDBOX_ATOM_CLIENT_SECRET } = process.env;
 
+  // Don't prettier formet this line! It would cry SyntaxError invalid token ')' of sort. Weird i knw.
   const bufferCredential = Buffer.from(`${SANDBOX_ATOM_CLIENT_ID}:${SANDBOX_ATOM_CLIENT_SECRET}`);
 
   const base64Credential = bufferCredential.toString('base64');
