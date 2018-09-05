@@ -1,16 +1,15 @@
 const serverless = require('serverless-http');
 const express = require('express');
-const app = express();
 const axios = require('axios');
+const app = express();
 
 app.get('/', (req, res) => {
-  res.send('hdadada');
+  res.send('Hello World');
 });
 
 module.exports.handler = serverless(app);
-module.exports.getAccessToken = function(event, context, callback) {
-  // const body = JSON.parse(event.body);
 
+module.exports.getAccessToken = function(event, context, callback) {
   const { SANDBOX_ATOM_CLIENT_ID, SANDBOX_ATOM_CLIENT_SECRET } = process.env;
 
   const bufferCredential = Buffer.from(`${SANDBOX_ATOM_CLIENT_ID}:${SANDBOX_ATOM_CLIENT_SECRET}`);
@@ -26,7 +25,6 @@ module.exports.getAccessToken = function(event, context, callback) {
 
   axios(requestConfig)
     .then(function(res) {
-      console.log(res);
       const response = {
         statusCode: 200,
         headers: {
@@ -35,20 +33,23 @@ module.exports.getAccessToken = function(event, context, callback) {
         },
         body: JSON.stringify(res.data),
       };
+
       callback(null, response);
     })
-    .catch(e => {
-      console.log(e);
+    .catch(err => {
+      const res = err.response.data;
+
       const errorResponse = {
-        statusCode: 401,
+        statusCode: res.status,
         headers: {
           'Access-Control-Allow-Origin': '*', // Required for CORS support to work
           'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
         },
-        // body: JSON.stringify({
-        //   message: error.title,
-        // }),
+        body: JSON.stringify({
+          message: res.message
+        }),
       };
+
       callback(null, errorResponse);
     });
 };
