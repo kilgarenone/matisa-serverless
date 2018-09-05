@@ -1,0 +1,26 @@
+service: serverless-app
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  stage: dev
+  region: ap-southeast-1
+
+functions:
+  app:
+    handler: index.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+  getAccessToken:
+    handler: index.getAccessToken
+    events:
+      - http:
+          path: getAccessToken
+          method: GET
+          cors: true
+    environment:
+      SANDBOX_ATOM_CLIENT_ID: ${ssm:sandboxAtomClientId}
+      SANDBOX_ATOM_CLIENT_SECRET: ${ssm:sandBoxAtomClientSecret}
+plugins:
+  - serverless-offline
