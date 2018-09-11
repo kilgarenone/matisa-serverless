@@ -22,5 +22,12 @@ functions:
     environment:
       SANDBOX_ATOM_CLIENT_ID: ${ssm:sandboxAtomClientId}
       SANDBOX_ATOM_CLIENT_SECRET: ${ssm:sandBoxAtomClientSecret}
+  getRecommendedPortfolio:
+    handler: index.getRecommendedPortfolio
+    events:
+      - http:
+          path: getRecommendedPortfolio
+          method: POST
+          cors: true
 plugins:
   - serverless-offline

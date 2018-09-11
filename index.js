@@ -54,3 +54,7 @@ module.exports.getAccessToken = function(event, context, callback) {
       callback(null, errorResponse);
     });
 };
+
+module.exports.getRecommendedPortfolio = function (event, context, callback) {
+  console.log('hey man', event.body)
+}
