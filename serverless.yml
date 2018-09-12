@@ -1,10 +1,27 @@
+# NOTE: update this with your service name
 service: serverless-app
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs8.10
   stage: dev
   region: ap-southeast-1
+
+# Optimization: See https://github.com/serverless-heaven/serverless-webpack#optimization--individual-packaging-per-function
+package:
+  individually: true
+
+# Use the serverless-webpack plugin to transpile ES6
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+# serverless-webpack configuration
+# Enable auto-packing of external modules
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
 
 functions:
   app:
@@ -29,5 +46,3 @@ functions:
           path: getRecommendedPortfolio
           method: POST
           cors: true
-plugins:
-  - serverless-offline
