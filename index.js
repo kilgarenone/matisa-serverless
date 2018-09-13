@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 
 export const handler = serverless(app);
 
-export async function getAccessToken(event, context, callback) {
+export async function getAccessToken(event, context) {
   const { SANDBOX_ATOM_CLIENT_ID, SANDBOX_ATOM_CLIENT_SECRET } = process.env;
 
   // Don't prettier formet this line! It would cry SyntaxError invalid token ')' of sort. Weird i knw.
@@ -38,8 +38,8 @@ export async function getAccessToken(event, context, callback) {
 
   try {
     const res = await got(OAUTH_URL, requestConfig)
-    const response = {
-      statusCode: 200,
+    return {
+      statusCode: res.statusCode,
       headers: {
         'Access-Control-Allow-Origin': '*', // Required for CORS support to work
         'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
@@ -47,9 +47,8 @@ export async function getAccessToken(event, context, callback) {
       body: JSON.stringify(res.body),
     };
 
-    callback(null, response);
   } catch (error) {
-    const errorResponse = {
+    return {
       statusCode: error.statusCode,
       headers: {
         'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -59,8 +58,6 @@ export async function getAccessToken(event, context, callback) {
         message: error.statusMessage
       }),
     };
-
-    callback(null, errorResponse);
   }
 };
 
