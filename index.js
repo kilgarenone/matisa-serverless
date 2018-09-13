@@ -80,7 +80,7 @@ export function getRecommendedPortfolio(event, context, callback) {
   const response = {
     statusCode: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+      'Access-Control-Allow-Origin': 'http://localhost:3000', // Need to properly set origin to receive response!
       'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
     },
     body: JSON.stringify({ loggedIn: true}),
