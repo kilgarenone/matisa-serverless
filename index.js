@@ -1,6 +1,7 @@
 import serverless from 'serverless-http';
 import express from 'express';
 import got from 'got';
+import { getAccessTokenFromCookie } from './utilities.js';
 
 const app = express();
 
@@ -43,8 +44,9 @@ export async function getAccessToken(event, context) {
       headers: {
         'Access-Control-Allow-Origin': '*', // Required for CORS support to work
         'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+        'Set-Cookie': `access_token=${res.body.access_token}; HttpOnly; domain=localhost` // TODO: add 'Secure'
       },
-      body: JSON.stringify(res.body),
+      body: JSON.stringify({ loggedIn: true}),
     };
 
   } catch (error) {
@@ -62,17 +64,29 @@ export async function getAccessToken(event, context) {
 };
 
 export function getRecommendedPortfolio(event, context, callback) {
-  const totalRiskScore = event.body.totalRiskScore;
-  let portfolioId = '';
+  const accessToken = getAccessTokenFromCookie(event.headers.Cookie);
+  // const totalRiskScore = event.body.totalRiskScore;
+  // let portfolioId = '';
 
-  if (totalRiskScore >= 20 && totalRiskScore <= 16) {
-    portfolioId = '123';
-  } else if (totalRiskScore >= 20 && totalRiskScore <= 16) {
-    portfolioId = '456';
-  } else if (totalRiskScore >= 20 && totalRiskScore <= 16) {
-    portfolioId = '789';
-  }
+  // if (totalRiskScore >= 20 && totalRiskScore <= 16) {
+  //   portfolioId = '123';
+  // } else if (totalRiskScore >= 20 && totalRiskScore <= 16) {
+  //   portfolioId = '456';
+  // } else if (totalRiskScore >= 20 && totalRiskScore <= 16) {
+  //   portfolioId = '789';
+  // }
+
+  console.log('hey man', accessToken)
+  const response = {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+      'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+    },
+    body: JSON.stringify({ loggedIn: true}),
+  };
+
+  callback(null, response)
 
 
-  console.log('hey man', event.body)
 }
