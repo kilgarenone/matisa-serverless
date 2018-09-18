@@ -70,11 +70,26 @@ export function getAllocationModelId(ageStr, riskToleranceLevelType) {
     ageType = RETIREE_SAVERS;
   }
 
-  console.log(ageType, riskToleranceLevelType);
-
   return AGE_TOLERANCE_LEVEL_FUND_ID_MAP[ageType][riskToleranceLevelType];
 }
 
 export function getAccessTokenFromCookie(cookieString) {
   return cookieString.split(`${ACCESS_TOKEN}=`).filter(Boolean)[0];
+}
+
+export function sortArrayByDesc(array, key) {
+  array.sort((a, b) => {
+    const weightA = a[key];
+    const weightB = b[key];
+
+    if (weightA < weightB) {
+      return 1;
+    }
+
+    if (weightA > weightB) {
+      return -1;
+    }
+
+    return 0;
+  });
 }
