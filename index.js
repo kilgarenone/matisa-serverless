@@ -1,7 +1,11 @@
 import serverless from 'serverless-http';
 import express from 'express';
 import got from 'got';
-import { getAccessTokenFromCookie } from './utilities.js';
+import {
+  getAccessTokenFromCookie,
+  getAllocationModelId,
+  getRiskToleranceLevelType,
+} from './utilities.js';
 
 const app = express();
 const OAUTH_URL =
@@ -65,46 +69,14 @@ export async function getAccessToken(event, context) {
   }
 }
 
-const CONSERVATIVE = 'convervative';
-const MODERATE = 'moderate';
-const AGGRESSIVE = 'aggressive';
-
-const EARLY_SAVERS = 'earlySavers';
-const MIDLIFE_SAVERS = 'midLifeSavers';
-const RETIREE_SAVERS = 'retireeSavers';
-
-function getRiskToleranceLevelType(totalRiskScore) {
-  let toleranceType = '';
-
-  if (totalRiskScore >= 12 && totalRiskScore <= 16) {
-    toleranceType = AGGRESSIVE;
-  } else if (totalRiskScore >= 7 && totalRiskScore <= 12) {
-    toleranceType = MODERATE;
-  } else if (totalRiskScore >= 4 && totalRiskScore <= 7) {
-    toleranceType = CONSERVATIVE;
-  }
-
-  return toleranceType;
-}
-
-const AGE_TO_TOLERANCE_LEVEL_MAP = {
-  [EARLY_SAVERS]: {
-    [CONSERVATIVE]: '',
-    [MODERATE]: '',
-    [AGGRESSIVE]: '',
-  },
-};
-
-function getAllocationModel(riskToleranceLevelType, age) {}
 export function getRecommendedPortfolio(event, context, callback) {
   const accessToken = getAccessTokenFromCookie(event.headers.Cookie);
-  const { totalRiskScore, age } = event.body;
-  let portfolioId = '';
+  const { totalRiskScore, age } = JSON.parse(event.body);
 
   const riskToleranceLevelType = getRiskToleranceLevelType(totalRiskScore);
-  const allocationModel = getAllocationModel(riskToleranceLevelType, age);
+  const allocationModelId = getAllocationModelId(age, riskToleranceLevelType);
+  console.log('hey man', allocationModelId);
 
-  // console.log('hey man', hehe);
   const response = {
     statusCode: 200,
     headers: {
