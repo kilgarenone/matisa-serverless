@@ -13,7 +13,7 @@ const OAUTH_URL =
   'https://sandbox.hydrogenplatform.com/authorization/v1/oauth/token?grant_type=client_credentials';
 const BASE_URL = 'https://sandbox.hydrogenplatform.com/nucleus/v1';
 
-const client = accessToken =>
+const httpClient = accessToken =>
   got.extend({
     baseUrl: BASE_URL,
     json: true,
@@ -21,6 +21,8 @@ const client = accessToken =>
       Authorization: `Bearer ${accessToken}`,
     },
   });
+
+let ACCESS_TOKEN = '';
 
 app.get('/', (req, res) => {
   res.send('Hello World');
@@ -68,24 +70,34 @@ export async function getAccessToken(event, context) {
   }
 }
 
+function fetchModelHolding(modelId) {
+  const modelHoldingRequestConfig = {
+    query: {
+      filter: `model_id==${modelId}`,
+    },
+  };
+  return httpClient(ACCESS_TOKEN)('/model_holding', modelHoldingRequestConfig);
+}
+
+function fetchModel(modelId) {
+  return httpClient(ACCESS_TOKEN)(`/model/${modelId}`);
+}
+
 export async function getRecommendedPortfolio(event, context, callback) {
-  const accessToken = getAccessTokenFromCookie(event.headers.Cookie);
+  ACCESS_TOKEN = getAccessTokenFromCookie(event.headers.Cookie);
+
   const { totalRiskScore, age } = JSON.parse(event.body);
 
   const riskToleranceLevelType = getRiskToleranceLevelType(totalRiskScore);
   const allocationModelId = getAllocationModelId(age, riskToleranceLevelType);
 
   try {
-    // Get holdings of a model
-    const modelHoldingRequestConfig = {
-      query: {
-        filter: `model_id==${allocationModelId}`,
-      },
-    };
-    const modelHoldingsRes = await client(accessToken)(
-      '/model_holding',
-      modelHoldingRequestConfig,
-    );
+    const [modelHoldingsRes, modelRes] = await Promise.all([
+      fetchModelHolding(allocationModelId),
+      fetchModel(allocationModelId),
+    ]);
+
+    console.log('modelRes', modelRes);
 
     // Grab all security's id and put in an array
     const securitiesArr = modelHoldingsRes.body.content.reduce((acc, curr) => {
@@ -99,7 +111,7 @@ export async function getRecommendedPortfolio(event, context, callback) {
         filter: `id==${Object.keys(securitiesArr).join(',id==')}`,
       },
     };
-    const securitiesRes = await client(accessToken)(
+    const securitiesRes = await httpClient(ACCESS_TOKEN)(
       '/security',
       securityRequestConfig,
     );
