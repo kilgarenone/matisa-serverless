@@ -122,8 +122,6 @@ export async function getRecommendedPortfolio(event, context, callback) {
         name: security.name,
         ticker: security.ticker,
         assetClass: security.asset_class,
-        fundName: modelRes.body.name,
-        fundDesc: modelRes.body.description,
       },
     }));
 
@@ -136,7 +134,7 @@ export async function getRecommendedPortfolio(event, context, callback) {
         'Access-Control-Allow-Origin': 'http://localhost:3000', // Need to properly set origin to receive response!
         'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
       },
-      body: JSON.stringify(holdingsArr),
+      body: JSON.stringify({ holdings: holdingsArr, portfolio: modelRes.body }),
     };
 
     callback(null, response);
