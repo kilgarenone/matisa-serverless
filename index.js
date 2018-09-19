@@ -92,12 +92,11 @@ export async function getRecommendedPortfolio(event, context, callback) {
   const allocationModelId = getAllocationModelId(age, riskToleranceLevelType);
 
   try {
+    // Grab model's holdings and its details
     const [modelHoldingsRes, modelRes] = await Promise.all([
       fetchModelHolding(allocationModelId),
       fetchModel(allocationModelId),
     ]);
-
-    console.log('modelRes', modelRes);
 
     // Grab all security's id and put in an array
     const securitiesArr = modelHoldingsRes.body.content.reduce((acc, curr) => {
@@ -123,6 +122,8 @@ export async function getRecommendedPortfolio(event, context, callback) {
         name: security.name,
         ticker: security.ticker,
         assetClass: security.asset_class,
+        fundName: modelRes.body.name,
+        fundDesc: modelRes.body.description,
       },
     }));
 
@@ -140,7 +141,17 @@ export async function getRecommendedPortfolio(event, context, callback) {
 
     callback(null, response);
   } catch (error) {
-    console.log('error', error);
-    // callback(null, );
+    const response = {
+      statusCode: error.statusCode,
+      headers: {
+        'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+        'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+      },
+      body: JSON.stringify({
+        message: error.statusMessage,
+      }),
+    };
+
+    callback(null, response);
   }
 }
