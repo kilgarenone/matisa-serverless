@@ -78,7 +78,7 @@ export function getAccessTokenFromCookie(cookieString) {
 }
 
 export function sortArrayByDesc(array, key) {
-  array.sort((a, b) => {
+  return [...array].sort((a, b) => {
     const weightA = a[key];
     const weightB = b[key];
 
