@@ -6,7 +6,7 @@ import {
   getAllocationId,
   getRiskToleranceLevelType,
   sortArrayByDesc,
-  roundValuesUpToTargetAndSorted,
+  roundValuesUpToTarget,
 } from './utilities.js';
 
 const app = express();
@@ -71,6 +71,7 @@ export async function getAccessToken(event, context) {
   }
 }
 
+// function(modelId: number[] | number) => Promise
 function fetchModelHolding(modelId) {
   const modelHoldingRequestConfig = {
     query: {
@@ -107,8 +108,9 @@ export async function getRecommendedPortfolio(event, context, callback) {
   const allocationId = getAllocationId(age, riskToleranceLevelType);
 
   try {
+    // Grab all model ids from '/allocation_composition'
+    // given an allocation_id
     const allocCompoResponse = await fetchAllocationComposition(allocationId);
-
     const allocCompoObj = allocCompoResponse.body.content.reduce(
       (acc, curr) => {
         const { model_id, strategic_weight: weight } = curr;
@@ -162,13 +164,16 @@ export async function getRecommendedPortfolio(event, context, callback) {
       },
     }));
 
-    const results = roundValuesUpToTargetAndSorted({
+    // when traslate /allocation_composition's weight
+    // to model's weight don't add up to 100 (percent)
+    roundValuesUpToTarget({
       source: holdingsArr,
       target: 100,
       accessorKey: 'weight',
     });
-    // // Sort by holding's weight
-    // sortArrayByDesc(holdingsArr, 'weight');
+
+    // Sort by holding's weight
+    const results = sortArrayByDesc(holdingsArr, 'weight');
 
     const response = {
       statusCode: 200,
