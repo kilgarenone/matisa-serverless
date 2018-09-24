@@ -8,6 +8,7 @@ const EARLY_SAVERS = 'earlySavers';
 const MIDLIFE_SAVERS = 'midLifeSavers';
 const RETIREE_SAVERS = 'retireeSavers';
 
+// These are all 'allocation_id's
 const EARLY_SAVER_CONSERVATIVE_FUND_ID = '1292c4ad-469a-4437-97b8-defa084e9936';
 const EARLY_SAVER_MODERATE_FUND_ID = '5cb27bee-03f8-411d-8d00-8716ddcd0941';
 const EARLY_SAVER_AGGRESSIVE_FUND_ID = '5aebcbf9-87e2-43f4-80c6-9def50fcc706';
@@ -94,11 +95,7 @@ export function sortArrayByDesc(array, accessor) {
   });
 }
 
-export function roundValuesUpToTargetAndSorted({
-  source,
-  target,
-  accessorKey = false,
-}) {
+export function roundValuesUpToTarget({ source, target, accessorKey = false }) {
   let off =
     target -
     source.reduce(
@@ -106,9 +103,7 @@ export function roundValuesUpToTargetAndSorted({
       0,
     );
 
-  const results = sortArrayByDesc(source, 'weight');
-
-  for (const ele of results) {
+  for (const ele of source) {
     if (off > 0) {
       ele[accessorKey] += 1;
       off -= 1;
@@ -119,6 +114,4 @@ export function roundValuesUpToTargetAndSorted({
       break;
     }
   }
-
-  return results;
 }
