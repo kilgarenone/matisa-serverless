@@ -3,9 +3,10 @@ import express from 'express';
 import got from 'got';
 import {
   getAccessTokenFromCookie,
-  getAllocationModelId,
+  getAllocationId,
   getRiskToleranceLevelType,
   sortArrayByDesc,
+  roundValuesUpToTargetAndSorted,
 } from './utilities.js';
 
 const app = express();
@@ -73,14 +74,28 @@ export async function getAccessToken(event, context) {
 function fetchModelHolding(modelId) {
   const modelHoldingRequestConfig = {
     query: {
-      filter: `model_id==${modelId}`,
+      filter: `model_id==${
+        Array.isArray(modelId) ? modelId.join(',model_id==') : modelId
+      }`,
     },
   };
   return httpClient(ACCESS_TOKEN)('/model_holding', modelHoldingRequestConfig);
 }
 
-function fetchModel(modelId) {
-  return httpClient(ACCESS_TOKEN)(`/model/${modelId}`);
+function fetchAllocation(allocationId) {
+  return httpClient(ACCESS_TOKEN)(`/allocation/${allocationId}`);
+}
+
+function fetchAllocationComposition(allocationId) {
+  const allocCompoRequestConfig = {
+    query: {
+      filter: `allocation_id==${allocationId}`,
+    },
+  };
+  return httpClient(ACCESS_TOKEN)(
+    '/allocation_composition',
+    allocCompoRequestConfig,
+  );
 }
 
 export async function getRecommendedPortfolio(event, context, callback) {
@@ -89,20 +104,42 @@ export async function getRecommendedPortfolio(event, context, callback) {
   const { totalRiskScore, age } = JSON.parse(event.body);
 
   const riskToleranceLevelType = getRiskToleranceLevelType(totalRiskScore);
-  const allocationModelId = getAllocationModelId(age, riskToleranceLevelType);
+  const allocationId = getAllocationId(age, riskToleranceLevelType);
 
   try {
+    const allocCompoResponse = await fetchAllocationComposition(allocationId);
+
+    const allocCompoObj = allocCompoResponse.body.content.reduce(
+      (acc, curr) => {
+        const { model_id, strategic_weight: weight } = curr;
+        acc[model_id] = { weight };
+        return acc;
+      },
+      {},
+    );
+
     // Grab model's holdings and its details
-    const [modelHoldingsRes, modelRes] = await Promise.all([
-      fetchModelHolding(allocationModelId),
-      fetchModel(allocationModelId),
+    const [modelHoldingsResponse, allocationResponse] = await Promise.all([
+      fetchModelHolding(Object.keys(allocCompoObj)),
+      fetchAllocation(allocationId),
     ]);
 
     // Grab all security's id and put in an array
-    const securitiesArr = modelHoldingsRes.body.content.reduce((acc, curr) => {
-      acc[curr.security_id] = { weight: curr.strategic_weight };
-      return acc;
-    }, {});
+    const securitiesArr = modelHoldingsResponse.body.content.reduce(
+      (acc, curr) => {
+        const {
+          security_id: securityId,
+          strategic_weight: weight,
+          model_id: modelId,
+        } = curr;
+        const assetWeight = Math.round(
+          (allocCompoObj[modelId].weight / 100) * weight,
+        );
+        acc[securityId] = { weight: assetWeight };
+        return acc;
+      },
+      {},
+    );
 
     // Get details of the securities
     const securityRequestConfig = {
@@ -125,8 +162,13 @@ export async function getRecommendedPortfolio(event, context, callback) {
       },
     }));
 
-    // Sort by holding's weight
-    sortArrayByDesc(holdingsArr, 'weight');
+    const results = roundValuesUpToTargetAndSorted({
+      source: holdingsArr,
+      target: 100,
+      accessorKey: 'weight',
+    });
+    // // Sort by holding's weight
+    // sortArrayByDesc(holdingsArr, 'weight');
 
     const response = {
       statusCode: 200,
@@ -134,7 +176,10 @@ export async function getRecommendedPortfolio(event, context, callback) {
         'Access-Control-Allow-Origin': 'http://localhost:3000', // Need to properly set origin to receive response!
         'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
       },
-      body: JSON.stringify({ holdings: holdingsArr, portfolio: modelRes.body }),
+      body: JSON.stringify({
+        holdings: results,
+        portfolio: allocationResponse.body,
+      }),
     };
 
     callback(null, response);

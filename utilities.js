@@ -8,23 +8,23 @@ const EARLY_SAVERS = 'earlySavers';
 const MIDLIFE_SAVERS = 'midLifeSavers';
 const RETIREE_SAVERS = 'retireeSavers';
 
-const EARLY_SAVER_CONSERVATIVE_FUND_ID = '8cd559f8-b512-4926-a71d-d001927aa31c';
-const EARLY_SAVER_MODERATE_FUND_ID = '3cd4299b-3035-4100-82d2-9662511b5ce1';
-const EARLY_SAVER_AGGRESSIVE_FUND_ID = 'd7640360-98fa-497f-9c77-808f00ca37f0';
+const EARLY_SAVER_CONSERVATIVE_FUND_ID = '1292c4ad-469a-4437-97b8-defa084e9936';
+const EARLY_SAVER_MODERATE_FUND_ID = '5cb27bee-03f8-411d-8d00-8716ddcd0941';
+const EARLY_SAVER_AGGRESSIVE_FUND_ID = '5aebcbf9-87e2-43f4-80c6-9def50fcc706';
 
 const MIDLIFE_ACCUMULATOR_CONSERVATIVE_FUND_ID =
-  '8f077f32-d0d8-4db5-ae48-528f675c06bc';
+  'e051c46f-6c0a-45eb-b8f1-8ec2c83f4277';
 const MIDLIFE_ACCUMULATOR_MODERATE_FUND_ID =
-  '3eb9698c-1e2c-4ce7-b9e7-68ee64b7c786';
+  'bc77092f-f917-45c6-b621-7c2ad0965496';
 const MIDLIFE_ACCUMULATOR_AGGRESSIVE_FUND_ID =
-  'bd00035b-0f61-4fb0-a1e2-26f414bb72fe';
+  '5de8a928-caee-4b6c-8769-897e9fd4cbfa';
 
 const TRANSITIONAL_RETIREE_CONSERVATIVE_FUND_ID =
-  '482e00b5-443b-4f2d-8afd-9702fb04bff1';
+  '8d3774ec-1647-43f6-844d-3184ab7edba8';
 const TRANSITIONAL_RETIREE_MODERATE_FUND_ID =
-  'cd5d0e5d-81e5-4c82-94b5-14edd1fdc13d';
+  '6f24c771-705d-4a69-b267-aa09e1c52669';
 const TRANSITIONAL_RETIREE_AGGRESSIVE_FUND_ID =
-  '30e91160-6657-4f97-ba93-aa9756bd8929';
+  'f967b0d3-67be-4cd1-bc47-9fb67fe37cdb';
 
 const AGE_TOLERANCE_LEVEL_FUND_ID_MAP = {
   [EARLY_SAVERS]: {
@@ -58,7 +58,7 @@ export function getRiskToleranceLevelType(totalRiskScore) {
   return toleranceType;
 }
 
-export function getAllocationModelId(ageStr, riskToleranceLevelType) {
+export function getAllocationId(ageStr, riskToleranceLevelType) {
   let ageType = '';
   const age = +ageStr;
 
@@ -77,10 +77,10 @@ export function getAccessTokenFromCookie(cookieString) {
   return cookieString.split(`${ACCESS_TOKEN}=`).filter(Boolean)[0];
 }
 
-export function sortArrayByDesc(array, key) {
+export function sortArrayByDesc(array, accessor) {
   return [...array].sort((a, b) => {
-    const weightA = a[key];
-    const weightB = b[key];
+    const weightA = typeof accessor === 'function' ? accessor(a) : a[accessor];
+    const weightB = typeof accessor === 'function' ? accessor(b) : b[accessor];
 
     if (weightA < weightB) {
       return 1;
@@ -92,4 +92,33 @@ export function sortArrayByDesc(array, key) {
 
     return 0;
   });
+}
+
+export function roundValuesUpToTargetAndSorted({
+  source,
+  target,
+  accessorKey = false,
+}) {
+  let off =
+    target -
+    source.reduce(
+      (acc, curr) => acc + Math.round(accessorKey ? curr[accessorKey] : curr),
+      0,
+    );
+
+  const results = sortArrayByDesc(source, 'weight');
+
+  for (const ele of results) {
+    if (off > 0) {
+      ele[accessorKey] += 1;
+      off -= 1;
+    } else if (off < 0) {
+      ele[accessorKey] -= 1;
+      off += 1;
+    } else {
+      break;
+    }
+  }
+
+  return results;
 }
