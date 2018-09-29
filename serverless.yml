@@ -46,3 +46,10 @@ functions:
           path: getRecommendedPortfolio
           method: POST
           cors: true
+  registerClient:
+    handler: index.registerClient
+    events:
+      - http:
+          path: registerClient
+          method: POST
+          cors: true

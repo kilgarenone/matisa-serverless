@@ -1,5 +1,6 @@
 import serverless from 'serverless-http';
 import express from 'express';
+import querystring from 'querystring';
 import got from 'got';
 import {
   getAccessTokenFromCookie,
@@ -99,13 +100,27 @@ function fetchAllocationComposition(allocationId) {
   );
 }
 
-export async function getRecommendedPortfolio(event, context, callback) {
-  ACCESS_TOKEN = getAccessTokenFromCookie(event.headers.Cookie);
+export async function registerClient(event, context, callback) {
+  ACCESS_TOKEN = ACCESS_TOKEN || getAccessTokenFromCookie(event.headers.Cookie);
+  const clientData = querystring.parse(event.body);
 
-  const { totalRiskScore, age } = JSON.parse(event.body);
+  console.log(clientData);
+}
+
+export async function getRecommendedPortfolio(event, context, callback) {
+  ACCESS_TOKEN = ACCESS_TOKEN || getAccessTokenFromCookie(event.headers.Cookie);
+  // use querystring! to parse 'foo=bar&abc=xyz&abc=123' to JS object!!
+  const surveyResults = querystring.parse(event.body);
+  const totalRiskScore = Object.values(surveyResults).reduce(
+    (accumulator, currentVal) => +accumulator + +currentVal,
+    0,
+  );
 
   const riskToleranceLevelType = getRiskToleranceLevelType(totalRiskScore);
-  const allocationId = getAllocationId(age, riskToleranceLevelType);
+  const allocationId = getAllocationId(
+    surveyResults.age,
+    riskToleranceLevelType,
+  );
 
   try {
     // Grab all model ids from '/allocation_composition'
