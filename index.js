@@ -81,11 +81,14 @@ function fetchModelHolding(modelId) {
       }`,
     },
   };
-  return httpClient(ACCESS_TOKEN)('/model_holding', modelHoldingRequestConfig);
+  return httpClient(ACCESS_TOKEN).get(
+    '/model_holding',
+    modelHoldingRequestConfig,
+  );
 }
 
 function fetchAllocation(allocationId) {
-  return httpClient(ACCESS_TOKEN)(`/allocation/${allocationId}`);
+  return httpClient(ACCESS_TOKEN).get(`/allocation/${allocationId}`);
 }
 
 function fetchAllocationComposition(allocationId) {
@@ -94,7 +97,7 @@ function fetchAllocationComposition(allocationId) {
       filter: `allocation_id==${allocationId}`,
     },
   };
-  return httpClient(ACCESS_TOKEN)(
+  return httpClient(ACCESS_TOKEN).get(
     '/allocation_composition',
     allocCompoRequestConfig,
   );
@@ -102,9 +105,45 @@ function fetchAllocationComposition(allocationId) {
 
 export async function registerClient(event, context, callback) {
   ACCESS_TOKEN = ACCESS_TOKEN || getAccessTokenFromCookie(event.headers.Cookie);
-  const clientData = querystring.parse(event.body);
 
+  const clientData = querystring.parse(event.body);
   console.log(clientData);
+
+  clientData['client_type'] = 'individual';
+  clientData['email'] = clientData.username;
+  clientData['metadata'] = JSON.parse(clientData.metadata);
+
+  try {
+    const res = await httpClient(ACCESS_TOKEN).post('/client', {
+      body: clientData,
+    });
+
+    const response = {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': 'http://localhost:3000', // Need to properly set origin to receive response!
+        'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+      },
+      body: JSON.stringify({
+        client: res.body,
+      }),
+    };
+
+    callback(null, response);
+  } catch (error) {
+    const response = {
+      statusCode: error.statusCode,
+      headers: {
+        'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+        'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+      },
+      body: JSON.stringify({
+        message: error.statusMessage,
+      }),
+    };
+
+    callback(null, response);
+  }
 }
 
 export async function getRecommendedPortfolio(event, context, callback) {
