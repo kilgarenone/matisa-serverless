@@ -28,9 +28,9 @@ functions:
     handler: index.handler
     events:
       - http: ANY /
-      - http: 'ANY {proxy+}'
+      - http: "ANY {proxy+}"
   getAccessToken:
-    handler: index.getAccessToken
+    handler: api/getAccessToken.getAccessToken
     events:
       - http:
           path: getAccessToken
