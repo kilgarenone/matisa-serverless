@@ -9,10 +9,15 @@ function buildResponse(statusCode, body, headers = {}) {
     body: JSON.stringify(body)
   };
 }
-export function success(statusCode = 200, body, headers) {
+export function buildSuccessResponse(statusCode = 200, body, headers) {
   return buildResponse(statusCode, body, headers);
 }
 
-export function failure(statusCode = 500, body, headers) {
-  return buildResponse(statusCode, body, headers);
+export function buildFailureResponse(error, headers) {
+  console.log(error); // debug error
+  return buildResponse(
+    error.statusCode,
+    { message: error.statusMessage },
+    headers
+  );
 }

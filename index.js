@@ -2,13 +2,15 @@ import serverless from "serverless-http";
 import express from "express";
 import querystring from "querystring";
 import got from "got";
+import format from "date-fns/format";
 import {
   getAccessTokenFromCookie,
   getAllocationId,
   getRiskToleranceLevelType,
   sortArrayByDesc,
-  roundValuesUpToTarget
-} from "./utilities.js";
+  roundValuesUpToTarget,
+  getUTCDate
+} from "./utilities";
 
 const app = express();
 const BASE_URL = "https://sandbox.hydrogenplatform.com/nucleus/v1";
@@ -86,27 +88,49 @@ function createAccount(clientId, accountType) {
     }
   });
 }
+
+function subscribeAccountToPortfolio(allocationId, accountId) {
+  return httpClient(ACCESS_TOKEN).post(`/account/${accountId}/subscribe`, {
+    body: {
+      current_weight: 100,
+      strategic_weight: 100,
+      date: format(getUTCDate(), "YYYY-MM-DD"),
+      allocation_id: allocationId
+    }
+  });
+}
 export async function registerClient(event, context, callback) {
   ACCESS_TOKEN = ACCESS_TOKEN || getAccessTokenFromCookie(event.headers.Cookie);
 
-  const clientData = querystring.parse(event.body);
-  console.log(clientData);
+  const { allocationId, ...client } = querystring.parse(event.body);
 
-  clientData.client_type = "individual";
-  clientData.email = clientData.username;
-  clientData.metadata = JSON.parse(clientData.metadata);
+  client.client_type = "individual";
+  client.username = client.email;
+  client.metadata = JSON.parse(client.metadata);
 
   try {
+    // Register a client
     const clientRes = await httpClient(ACCESS_TOKEN).post("/client", {
-      body: clientData
+      body: client
     });
 
-    const clientId = clientRes.body.client.id;
+    // Retrive the new client's id for later usage
+    const clientId = clientRes.body.id;
 
+    // Create taxable and tax-advantaged accounts given the clientId
     const [taxAdvantagedAcc, taxableAcc] = await Promise.all([
       createAccount(clientId, ACC_TYPE_TAX_ADVANTAGED),
       createAccount(clientId, ACC_TYPE_TAXABLE)
     ]);
+
+    // Create a portfolio for taxable and non-taxable accounts each
+    const [taxAdvantagedSub, taxableSub] = await Promise.all([
+      subscribeAccountToPortfolio(allocationId, taxAdvantagedAcc.body.id),
+      subscribeAccountToPortfolio(allocationId, taxableAcc.body.id)
+    ]);
+
+    // console.log(taxAdvantagedSub);
+    console.log(taxableSub);
 
     const response = {
       statusCode: 200,
@@ -115,7 +139,7 @@ export async function registerClient(event, context, callback) {
         "Access-Control-Allow-Credentials": true // Required for cookies, authorization headers with HTTPS
       },
       body: JSON.stringify({
-        client: res.body
+        client: "1212"
       })
     };
 

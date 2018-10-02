@@ -1,5 +1,8 @@
 import got from "got";
-import { success, failure } from "../libs/response-lib";
+import {
+  buildSuccessResponse,
+  buildFailureResponse
+} from "../libs/response-lib";
 
 const OAUTH_URL =
   "https://sandbox.hydrogenplatform.com/authorization/v1/oauth/token?grant_type=client_credentials";
@@ -21,7 +24,7 @@ export async function getAccessToken(event, context, callback) {
   try {
     const res = await got(OAUTH_URL, requestConfig);
 
-    const response = success(
+    const response = buildSuccessResponse(
       res.statusCode,
       { loggedIn: true },
       { "Set-Cookie": `access_token=${res.body.access_token}; HttpOnly; ` }
@@ -29,9 +32,7 @@ export async function getAccessToken(event, context, callback) {
 
     return callback(null, response);
   } catch (error) {
-    const response = failure(error.statusCode, {
-      message: error.statusMessage
-    });
+    const response = buildFailureResponse(error);
 
     return callback(null, response);
   }
