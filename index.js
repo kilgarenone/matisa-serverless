@@ -124,13 +124,10 @@ export async function registerClient(event, context, callback) {
     ]);
 
     // Create a portfolio for taxable and non-taxable accounts each
-    const [taxAdvantagedSub, taxableSub] = await Promise.all([
+    const [taxAdvantagedPortfolio, taxablePortfolio] = await Promise.all([
       subscribeAccountToPortfolio(allocationId, taxAdvantagedAcc.body.id),
       subscribeAccountToPortfolio(allocationId, taxableAcc.body.id)
     ]);
-
-    // console.log(taxAdvantagedSub);
-    console.log(taxableSub);
 
     const response = {
       statusCode: 200,
@@ -139,7 +136,10 @@ export async function registerClient(event, context, callback) {
         "Access-Control-Allow-Credentials": true // Required for cookies, authorization headers with HTTPS
       },
       body: JSON.stringify({
-        client: "1212"
+        taxableAcc: taxableAcc.body,
+        taxAdvantagedAcc: taxAdvantagedAcc.body,
+        taxAdvantagedPortfolio: taxAdvantagedPortfolio.body,
+        taxablePortfolio: taxablePortfolio.body
       })
     };
 
