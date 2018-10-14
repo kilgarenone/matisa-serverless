@@ -102,11 +102,11 @@ function subscribeAccountToPortfolio(allocationId, accountId) {
 export async function registerClient(event, context, callback) {
   ACCESS_TOKEN = ACCESS_TOKEN || getAccessTokenFromCookie(event.headers.Cookie);
 
-  const { allocationId, ...client } = querystring.parse(event.body);
+  const client = querystring.parse(event.body);
 
   client.client_type = "individual";
   client.username = client.email;
-  client.metadata = JSON.parse(client.metadata);
+  // client.metadata = JSON.parse(client.metadata);
 
   try {
     // Register a client
@@ -114,20 +114,21 @@ export async function registerClient(event, context, callback) {
       body: client
     });
 
-    // Retrive the new client's id for later usage
-    const clientId = clientRes.body.id;
+    console.log(clientRes);
+    // // Retrive the new client's id for later usage
+    // const clientId = clientRes.body.id;
 
-    // Create taxable and tax-advantaged accounts given the clientId
-    const [taxAdvantagedAcc, taxableAcc] = await Promise.all([
-      createAccount(clientId, ACC_TYPE_TAX_ADVANTAGED),
-      createAccount(clientId, ACC_TYPE_TAXABLE)
-    ]);
+    // // Create taxable and tax-advantaged accounts given the clientId
+    // const [taxAdvantagedAcc, taxableAcc] = await Promise.all([
+    //   createAccount(clientId, ACC_TYPE_TAX_ADVANTAGED),
+    //   createAccount(clientId, ACC_TYPE_TAXABLE)
+    // ]);
 
-    // Create a portfolio for taxable and non-taxable accounts each
-    const [taxAdvantagedPortfolio, taxablePortfolio] = await Promise.all([
-      subscribeAccountToPortfolio(allocationId, taxAdvantagedAcc.body.id),
-      subscribeAccountToPortfolio(allocationId, taxableAcc.body.id)
-    ]);
+    // // Create a portfolio for taxable and non-taxable accounts each
+    // const [taxAdvantagedPortfolio, taxablePortfolio] = await Promise.all([
+    //   subscribeAccountToPortfolio(allocationId, taxAdvantagedAcc.body.id),
+    //   subscribeAccountToPortfolio(allocationId, taxableAcc.body.id)
+    // ]);
 
     const response = {
       statusCode: 200,
@@ -135,12 +136,13 @@ export async function registerClient(event, context, callback) {
         "Access-Control-Allow-Origin": "http://localhost:3000", // Need to properly set origin to receive response!
         "Access-Control-Allow-Credentials": true // Required for cookies, authorization headers with HTTPS
       },
-      body: JSON.stringify({
-        taxableAcc: taxableAcc.body,
-        taxAdvantagedAcc: taxAdvantagedAcc.body,
-        taxAdvantagedPortfolio: taxAdvantagedPortfolio.body,
-        taxablePortfolio: taxablePortfolio.body
-      })
+      body: JSON.stringify(clientRes.body)
+      // body: JSON.stringify({
+      //   taxableAcc: taxableAcc.body,
+      //   taxAdvantagedAcc: taxAdvantagedAcc.body,
+      //   taxAdvantagedPortfolio: taxAdvantagedPortfolio.body,
+      //   taxablePortfolio: taxablePortfolio.body
+      // })
     };
 
     callback(null, response);
